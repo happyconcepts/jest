@@ -5,8 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-const path = require('path');
-const customImportResolver = path.resolve('./eslintImportResolver');
+const customImportResolver = require.resolve('./eslintImportResolver');
 
 module.exports = {
   extends: [
@@ -20,6 +19,7 @@ module.exports = {
     {
       files: ['*.md'],
       rules: {
+        'arrow-body-style': 0,
         'consistent-return': 0,
         'flowtype/require-valid-file-annotation': 0,
         'import/no-extraneous-dependencies': 0,
@@ -53,27 +53,6 @@ module.exports = {
       files: 'types/**/*',
       rules: {
         'import/no-extraneous-dependencies': 0,
-      },
-    },
-    {
-      excludedFiles: ['e2e/__tests__/**/*', 'website/versioned_docs/**/*.md'],
-      files: [
-        'examples/**/*',
-        'scripts/**/*',
-        'e2e/*/**/*',
-        'website/*/**/*',
-        'eslintImportResolver.js',
-      ],
-      rules: {
-        'prettier/prettier': [
-          2,
-          {
-            bracketSpacing: false,
-            printWidth: 80,
-            singleQuote: true,
-            trailingComma: 'es5',
-          },
-        ],
       },
     },
     {
@@ -111,6 +90,7 @@ module.exports = {
   parser: 'babel-eslint',
   plugins: ['markdown', 'import', 'prettier'],
   rules: {
+    'arrow-body-style': 2,
     'flowtype/boolean-style': 2,
     'flowtype/no-primitive-constructor-types': 2,
     'flowtype/require-valid-file-annotation': 2,
@@ -133,15 +113,7 @@ module.exports = {
     'import/order': 0,
     'no-console': 0,
     'no-unused-vars': 2,
-    'prettier/prettier': [
-      2,
-      {
-        bracketSpacing: false,
-        printWidth: 80,
-        singleQuote: true,
-        trailingComma: 'all',
-      },
-    ],
+    'prettier/prettier': 2,
   },
   settings: {
     'import/resolver': {

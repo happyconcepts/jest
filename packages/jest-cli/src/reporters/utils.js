@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-present, Facebook, Inc. All rights reserved.
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -122,6 +122,7 @@ export const getSummary = (
   const testsFailed = aggregatedResults.numFailedTests;
   const testsPassed = aggregatedResults.numPassedTests;
   const testsPending = aggregatedResults.numPendingTests;
+  const testsTodo = aggregatedResults.numTodoTests;
   const testsTotal = aggregatedResults.numTotalTests;
   const width = (options && options.width) || 0;
 
@@ -141,6 +142,7 @@ export const getSummary = (
     chalk.bold('Tests:       ') +
     (testsFailed ? chalk.bold.red(`${testsFailed} failed`) + ', ' : '') +
     (testsPending ? chalk.bold.yellow(`${testsPending} skipped`) + ', ' : '') +
+    (testsTodo ? chalk.bold.magenta(`${testsTodo} todo`) + ', ' : '') +
     (testsPassed ? chalk.bold.green(`${testsPassed} passed`) + ', ' : '') +
     `${testsTotal} total`;
 
@@ -196,7 +198,7 @@ const renderTime = (runTime, estimatedTime, width) => {
   if (estimatedTime > 2 && runTime < estimatedTime && width) {
     const availableWidth = Math.min(PROGRESS_BAR_WIDTH, width);
     const length = Math.min(
-      Math.floor(runTime / estimatedTime * availableWidth),
+      Math.floor((runTime / estimatedTime) * availableWidth),
       availableWidth,
     );
     if (availableWidth >= 2) {

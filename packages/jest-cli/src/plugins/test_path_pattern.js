@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-present, Facebook, Inc. All rights reserved.
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -8,8 +8,8 @@
  */
 
 import type {GlobalConfig} from 'types/Config';
-import {BaseWatchPlugin, Prompt} from 'jest-watch';
-import TestPathPatternPrompt from '../test_path_pattern_prompt';
+import {BaseWatchPlugin, Prompt} from 'jest-watcher';
+import TestPathPatternPrompt from '../TestPathPatternPrompt';
 import activeFilters from '../lib/active_filters_message';
 
 class TestPathPatternPlugin extends BaseWatchPlugin {

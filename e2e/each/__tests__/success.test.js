@@ -1,9 +1,16 @@
 /**
- * Copyright (c) 2018-present, Facebook, Inc. All rights reserved.
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+
+test.each(['red', 'green', 'bean'])(
+  "The word %s contains the letter 'e'",
+  word => {
+    expect(/e/.test(word)).toBe(true);
+  }
+);
 
 it.each([[true, true], [true, true]])(
   'passes one row expected %s == %s',

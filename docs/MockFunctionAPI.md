@@ -29,24 +29,30 @@ For example: A mock function `f` that has been called twice, with the arguments 
 
 ### `mockFn.mock.results`
 
-An array containing the results of all calls that have been made to this mock function. Each entry in this array is an object containing a boolean `isThrow` property, and a `value` property. `isThrow` is true if the call terminated due to a `throw`, or false if the the call returned normally. The `value` property contains the value that was thrown or returned.
+An array containing the results of all calls that have been made to this mock function. Each entry in this array is an object containing a `type` property, and a `value` property. `type` will be one of the following:
 
-For example: A mock function `f` that has been called three times, returning `result1`, throwing an error, and then returning `result2`, would have a `mock.results` array that looks like this:
+- `'return'` - Indicates that the call completed by returning normally.
+- `'throw'` - Indicates that the call completed by throwing a value.
+- `'incomplete'` - Indicates that the call has not yet completed. This occurs if you test the result from within the mock function itself, or from within a function that was called by the mock.
+
+The `value` property contains the value that was thrown or returned. `value` is undefined when `type === 'incomplete'`.
+
+For example: A mock function `f` that has been called three times, returning `'result1'`, throwing an error, and then returning `'result2'`, would have a `mock.results` array that looks like this:
 
 ```js
 [
   {
-    isThrow: false,
+    type: 'return',
     value: 'result1',
   },
   {
-    isThrow: true,
+    type: 'throw',
     value: {
       /* Error instance */
     },
   },
   {
-    isThrow: false,
+    type: 'return',
     value: 'result2',
   },
 ];
@@ -80,15 +86,15 @@ The [`clearMocks`](configuration.html#clearmocks-boolean) configuration option i
 
 ### `mockFn.mockReset()`
 
-Resets all information stored in the mock, including any initial implementation and mock name given.
+Does everything that [`mockFn.mockClear()`](#mockfnmockclear) does, and also removes any mocked return values or implementations.
 
-This is useful when you want to completely restore a mock back to its initial state.
+This is useful when you want to completely reset a _mock_ back to its initial state. (Note that resetting a _spy_ will result in a function with no return value).
 
 Beware that `mockReset` will replace `mockFn.mock`, not just [`mockFn.mock.calls`](#mockfn-mock-calls) and [`mockFn.mock.instances`](#mockfn-mock-instances). You should therefore avoid assigning `mockFn.mock` to other variables, temporary or not, to make sure you don't access stale data.
 
 ### `mockFn.mockRestore()`
 
-Removes the mock and restores the initial implementation.
+Does everything that [`mockFn.mockReset()`](#mockfnmockreset) does, and also restores the original (non-mocked) implementation.
 
 This is useful when you want to mock functions in certain test cases and restore the original implementation in others.
 

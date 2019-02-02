@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-present, Facebook, Inc. All rights reserved.
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -31,12 +31,6 @@ import StackUtils from 'stack-utils';
 import prettyFormat from 'pretty-format';
 
 import {getState} from './state';
-
-// Try getting the real promise object from the context, if available. Someone
-// could have overridden it in a test. Async functions return it implicitly.
-// eslint-disable-next-line no-unused-vars
-const Promise = global[Symbol.for('jest-native-promise')] || global.Promise;
-export const getOriginalPromise = () => Promise;
 
 const stackUtils = new StackUtils({cwd: 'A path that does not exist'});
 
@@ -75,11 +69,14 @@ export const makeTest = (
     _mode = parent.mode;
   }
 
+  const errors: Array<[?Exception, Exception]> = [];
+
   return {
     asyncError,
     duration: null,
-    errors: [],
+    errors,
     fn,
+    invocations: 0,
     mode: _mode,
     name: convertDescriptorToString(name),
     parent,
@@ -89,19 +86,37 @@ export const makeTest = (
   };
 };
 
+// Traverse the tree of describe blocks and return true if at least one describe
+// block has an enabled test.
+const hasEnabledTest = (describeBlock: DescribeBlock): boolean => {
+  const {hasFocusedTests, testNamePattern} = getState();
+  const hasOwnEnabledTests = describeBlock.tests.some(
+    test =>
+      !(
+        test.mode === 'skip' ||
+        (hasFocusedTests && test.mode !== 'only') ||
+        (testNamePattern && !testNamePattern.test(getTestID(test)))
+      ),
+  );
+
+  return hasOwnEnabledTests || describeBlock.children.some(hasEnabledTest);
+};
+
 export const getAllHooksForDescribe = (
   describe: DescribeBlock,
 ): {[key: 'beforeAll' | 'afterAll']: Array<Hook>} => {
   const result = {afterAll: [], beforeAll: []};
 
-  for (const hook of describe.hooks) {
-    switch (hook.type) {
-      case 'beforeAll':
-        result.beforeAll.push(hook);
-        break;
-      case 'afterAll':
-        result.afterAll.push(hook);
-        break;
+  if (hasEnabledTest(describe)) {
+    for (const hook of describe.hooks) {
+      switch (hook.type) {
+        case 'beforeAll':
+          result.beforeAll.push(hook);
+          break;
+        case 'afterAll':
+          result.afterAll.push(hook);
+          break;
+      }
     }
   }
 
@@ -115,21 +130,26 @@ export const getEachHooksForTest = (
   let {parent: block} = test;
 
   do {
+    const beforeEachForCurrentBlock = [];
     for (const hook of block.hooks) {
       switch (hook.type) {
         case 'beforeEach':
-          // Before hooks are executed from top to bottom, the opposite of the
-          // way we traversed it.
-          result.beforeEach.unshift(hook);
+          beforeEachForCurrentBlock.push(hook);
           break;
         case 'afterEach':
           result.afterEach.push(hook);
           break;
       }
     }
+    // 'beforeEach' hooks are executed from top to bottom, the opposite of the
+    // way we traversed it.
+    result.beforeEach = [...beforeEachForCurrentBlock, ...result.beforeEach];
   } while ((block = block.parent));
   return result;
 };
+
+export const describeBlockHasTests = (describe: DescribeBlock) =>
+  describe.tests.length || describe.children.some(describeBlockHasTests);
 
 const _makeTimeoutMessage = (timeout, isHook) =>
   `Exceeded timeout of ${timeout}ms for a ${
@@ -140,7 +160,7 @@ const _makeTimeoutMessage = (timeout, isHook) =>
 // the original values in the variables before we require any files.
 const {setTimeout, clearTimeout} = global;
 
-export const callAsyncFn = (
+export const callAsyncCircusFn = (
   fn: AsyncFn,
   testContext: ?TestContext,
   {isHook, timeout}: {isHook?: ?boolean, timeout: number},
@@ -222,18 +242,16 @@ export const callAsyncFn = (
 
 export const getTestDuration = (test: TestEntry): ?number => {
   const {startedAt} = test;
-  return startedAt ? Date.now() - startedAt : null;
+  return typeof startedAt === 'number' ? Date.now() - startedAt : null;
 };
 
 export const makeRunResult = (
   describeBlock: DescribeBlock,
   unhandledErrors: Array<Error>,
-): RunResult => {
-  return {
-    testResults: makeTestResults(describeBlock),
-    unhandledErrors: unhandledErrors.map(_formatError),
-  };
-};
+): RunResult => ({
+  testResults: makeTestResults(describeBlock),
+  unhandledErrors: unhandledErrors.map(_formatError),
+});
 
 const makeTestResults = (describeBlock: DescribeBlock, config): TestResults => {
   const {includeTestLocationInResult} = getState();
@@ -261,6 +279,7 @@ const makeTestResults = (describeBlock: DescribeBlock, config): TestResults => {
     testResults.push({
       duration: test.duration,
       errors: test.errors.map(_formatError),
+      invocations: test.invocations,
       location,
       status,
       testPath,

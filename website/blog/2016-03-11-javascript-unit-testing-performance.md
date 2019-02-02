@@ -13,9 +13,9 @@ As engineers added more and more tests though, we noticed the performance of Jes
 
 Jest is a bit different from most test runners. We designed it to work well in the context of Facebook's infrastructure:
 
-* **Monorepo** At Facebook we have a huge monorepo that contains all of our JavaScript code. There are many reasons why this approach is advantageous for us and there is an [awesome talk](https://www.youtube.com/watch?v=W71BTkUbdqE) by a Google engineer that highlights all the benefits and drawbacks of monorepos.
-* **Sandboxing** Another feature of Jest that's important to Facebook is how it virtualizes the test environment and wraps `require` in order to sandbox code execution and isolate individual tests. We're even working on making Jest more modular so we can take advantage of this functionality in other non-testing related use cases.
-* **providesModule** If you've looked at any of our open source JavaScript projects before, you may have noticed that we use a `@providesModule` header to assign globally unique IDs to modules. This does require some custom tooling, but it allows us to reference modules without relative paths which has helped us move incredibly fast, has scaled well as our engineering organization has grown, and has fostered code sharing across the entire company. Check out [RelayContainer](https://github.com/facebook/relay/blob/4eae620d86ed7fce1ee463c2fca88eb690d9cbde/src/container/RelayContainer.js#L9) for an example of how this works in practice. One downside to this approach, though, is that we're forced to read and parse our entire JavaScript codebase in order to resolve a single require statement. This would obviously be prohibitively expensive without extensive caching, especially for a short-lived process like Jest.
+- **Monorepo** At Facebook we have a huge monorepo that contains all of our JavaScript code. There are many reasons why this approach is advantageous for us and there is an [awesome talk](https://www.youtube.com/watch?v=W71BTkUbdqE) by a Google engineer that highlights all the benefits and drawbacks of monorepos.
+- **Sandboxing** Another feature of Jest that's important to Facebook is how it virtualizes the test environment and wraps `require` in order to sandbox code execution and isolate individual tests. We're even working on making Jest more modular so we can take advantage of this functionality in other non-testing related use cases.
+- **providesModule** If you've looked at any of our open source JavaScript projects before, you may have noticed that we use a `@providesModule` header to assign globally unique IDs to modules. This does require some custom tooling, but it allows us to reference modules without relative paths which has helped us move incredibly fast, has scaled well as our engineering organization has grown, and has fostered code sharing across the entire company. Check out [RelayContainer](https://github.com/facebook/relay/blob/4eae620d86ed7fce1ee463c2fca88eb690d9cbde/src/container/RelayContainer.js#L9) for an example of how this works in practice. One downside to this approach, though, is that we're forced to read and parse our entire JavaScript codebase in order to resolve a single require statement. This would obviously be prohibitively expensive without extensive caching, especially for a short-lived process like Jest.
 
 As a result of these unique constraints, Jest may never be able to be as fast as other test runners when running on our entire suite of tests. However, engineers rarely need to run Jest on our entire test suite. Powered by static analysis in the [node-haste](https://github.com/facebook/node-haste) project – we've been able to make the default mode for running Jest at Facebook `jest --onlyChanged`, or `jest -o`. In this mode we build a reverse dependency graph to find only the affected tests that need to be run based on the modules that have been changed.
 
@@ -25,7 +25,7 @@ Most of the time our static analysis determines that more than one test needs to
 
 Recently we noticed Jest often seemed stuck _“Waiting for 3 tests”_ for up to a minute toward the end of a run. It turned out we had a few really slow tests in our codebase that were dominating the test runtime. While we were able to speed these individual tests up significantly, we also made a change in how Jest schedules test runs. Previously we used to schedule test runs based on file system traversal, which was actually quite random. Here is an example of 11 tests in gray blocks over two workers. The size of the block is the runtime of the test:
 
-![perf-basic-scheduling](/jest/img/blog/Scheduling1.png)
+![perf-basic-scheduling](/img/blog/Scheduling1.png)
 
 We were randomly running a mix of fast and slow tests, and one of our slowest tests ended up running as almost all the other tests were completed, during which the second worker sat idle.
 
@@ -33,7 +33,7 @@ We made a change to schedule tests based on their file size which is usually a g
 
 Here is an example of the same test run from before with better scheduling:
 
-![perf-improved-scheduling](/jest/img/blog/Scheduling2.png)
+![perf-improved-scheduling](/img/blog/Scheduling2.png)
 
 Because we are running slow tests first, Jest can sometimes seem to take a long time to start up – we only print results after the first test has completed. For the future we are planning to run previously failed tests first, because getting that info to developers as quickly as possible matters the most.
 
@@ -116,4 +116,4 @@ More importantly, adding new tests causes total runtime to grow very slowly. Eng
 
 With Jest's recent 0.9 release and performance improvements from the [node-haste2 integration](https://github.com/facebook/jest/pull/599), the runtime of the [Relay](https://github.com/facebook/relay) framework's test suite went down from 60 seconds to about 25 and the [react-native](https://github.com/facebook/react-native) test suite now finishes in less than ten seconds on a 13” MacBook Pro.
 
-We're very happy with the wins we've seen so far, and we're going to keep working on Jest and making it better. If you are curious about contributing to Jest, feel free get in touch on GitHub, [Discord](http://facebook.github.io/jest/support.html) or Facebook :)
+We're very happy with the wins we've seen so far, and we're going to keep working on Jest and making it better. If you are curious about contributing to Jest, feel free get in touch on GitHub, [Discord](https://jestjs.io/support.html) or Facebook :)

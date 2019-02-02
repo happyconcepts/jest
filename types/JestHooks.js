@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-present, Facebook, Inc. All rights reserved.
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -10,12 +10,20 @@
 import type {AggregatedResult} from './TestResult';
 import type {Path, ProjectConfig} from './Config';
 
+type TestSuiteInfo = {
+  config: ProjectConfig,
+  duration: ?number,
+  testPath: string,
+};
+
 export type JestHookExposedFS = {
   projects: Array<{config: ProjectConfig, testPaths: Array<Path>}>,
 };
 
 export type FileChange = (fs: JestHookExposedFS) => void;
-export type ShouldRunTestSuite = (testPath: string) => Promise<boolean>;
+export type ShouldRunTestSuite = (
+  testSuiteInfo: TestSuiteInfo,
+) => Promise<boolean>;
 export type TestRunComplete = (results: AggregatedResult) => void;
 
 export type JestHookSubscriber = {
@@ -27,5 +35,5 @@ export type JestHookSubscriber = {
 export type JestHookEmitter = {
   onFileChange: (fs: JestHookExposedFS) => void,
   onTestRunComplete: (results: AggregatedResult) => void,
-  shouldRunTestSuite: (testPath: string) => Promise<boolean>,
+  shouldRunTestSuite: (testSuiteInfo: TestSuiteInfo) => Promise<boolean>,
 };

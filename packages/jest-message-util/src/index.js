@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-present, Facebook, Inc. All rights reserved.
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -26,10 +26,7 @@ const stackUtils = new StackUtils({
 let nodeInternals = [];
 
 try {
-  nodeInternals = StackUtils.nodeInternals()
-    // this is to have the tests be the same in node 4 and node 6.
-    // TODO: Remove when we drop support for node 4
-    .concat(new RegExp('internal/process/next_tick.js'));
+  nodeInternals = StackUtils.nodeInternals();
 } catch (e) {
   // `StackUtils.nodeInternals()` fails in browsers. We don't need to remove
   // node internals in the browser though, so no issue.
@@ -62,13 +59,10 @@ const TITLE_BULLET = chalk.bold('\u25cf ');
 const STACK_TRACE_COLOR = chalk.dim;
 const STACK_PATH_REGEXP = /\s*at.*\(?(\:\d*\:\d*|native)\)?/;
 const EXEC_ERROR_MESSAGE = 'Test suite failed to run';
-const ERROR_TEXT = 'Error: ';
+const NOT_EMPTY_LINE_REGEXP = /^(?!$)/gm;
 
 const indentAllLines = (lines: string, indent: string) =>
-  lines
-    .split('\n')
-    .map(line => (line ? indent + line : line))
-    .join('\n');
+  lines.replace(NOT_EMPTY_LINE_REGEXP, indent);
 
 const trim = string => (string || '').trim();
 
@@ -153,7 +147,10 @@ export const formatExecError = (
   return TITLE_INDENT + TITLE_BULLET + messageToUse + stack + '\n';
 };
 
-const removeInternalStackEntries = (lines, options: StackTraceOptions) => {
+const removeInternalStackEntries = (
+  lines: string[],
+  options: StackTraceOptions,
+): string[] => {
   let pathCounter = 0;
 
   return lines.filter(line => {
@@ -213,7 +210,7 @@ const formatPaths = (config: StackTraceConfig, relativeTestPath, line) => {
   if (
     (config.testMatch &&
       config.testMatch.length &&
-      micromatch(filePath, config.testMatch)) ||
+      micromatch.some(filePath, config.testMatch)) ||
     filePath === relativeTestPath
   ) {
     filePath = chalk.reset.cyan(filePath);
@@ -221,7 +218,12 @@ const formatPaths = (config: StackTraceConfig, relativeTestPath, line) => {
   return STACK_TRACE_COLOR(match[1]) + filePath + STACK_TRACE_COLOR(match[3]);
 };
 
-const getTopFrame = (lines: string[]) => {
+export const getStackTraceLines = (
+  stack: string,
+  options: StackTraceOptions = {noStackTrace: false},
+) => removeInternalStackEntries(stack.split(/\n/), options);
+
+export const getTopFrame = (lines: string[]) => {
   for (const line of lines) {
     if (line.includes(PATH_NODE_MODULES) || line.includes(PATH_JEST_PACKAGES)) {
       continue;
@@ -243,14 +245,12 @@ export const formatStackTrace = (
   options: StackTraceOptions,
   testPath: ?Path,
 ) => {
-  let lines = stack.split(/\n/);
+  const lines = getStackTraceLines(stack, options);
+  const topFrame = getTopFrame(lines);
   let renderedCallsite = '';
   const relativeTestPath = testPath
     ? slash(path.relative(config.rootDir, testPath))
     : null;
-  lines = removeInternalStackEntries(lines, options);
-
-  const topFrame = getTopFrame(lines);
 
   if (topFrame) {
     const filename = topFrame.file;
@@ -331,13 +331,18 @@ export const separateMessageFromStack = (content: string) => {
     return {message: '', stack: ''};
   }
 
-  const messageMatch = content.match(/(^(.|\n)*?(?=\n\s*at\s.*\:\d*\:\d*))/);
-  let message = messageMatch ? messageMatch[0] : 'Error';
-  const stack = messageMatch ? content.slice(message.length) : content;
-  // If the error is a plain error instead of a SyntaxError or TypeError
-  // we remove it from the message because it is generally not useful.
-  if (message.startsWith(ERROR_TEXT)) {
-    message = message.substr(ERROR_TEXT.length);
+  // All lines up to what looks like a stack -- or if nothing looks like a stack
+  // (maybe it's a code frame instead), just the first non-empty line.
+  // If the error is a plain "Error:" instead of a SyntaxError or TypeError we
+  // remove the prefix from the message because it is generally not useful.
+  const messageMatch = content.match(
+    /^(?:Error: )?([\s\S]*?(?=\n\s*at\s.*\:\d*\:\d*)|\s*.*)([\s\S]*)$/,
+  );
+  if (!messageMatch) {
+    // For flow
+    throw new Error('If you hit this error, the regex above is buggy.');
   }
+  const message = messageMatch[1];
+  const stack = messageMatch[2];
   return {message, stack};
 };

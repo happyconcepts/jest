@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 'use strict';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -168,12 +175,12 @@ async function main() {
   console.log('-'.repeat(75));
   console.log(
     `% improvement over ${calls} calls (global time):`,
-    100 * (wFGT - jWGT) / wFGT,
+    (100 * (wFGT - jWGT)) / wFGT,
   );
 
   console.log(
     `% improvement over ${calls} calls (processing time):`,
-    100 * (wFPT - jWPT) / wFPT,
+    (100 * (wFPT - jWPT)) / wFPT,
   );
 }
 
