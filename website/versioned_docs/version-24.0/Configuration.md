@@ -96,9 +96,9 @@ test('if utils mocked automatically', () => {
 });
 ```
 
-_Note: Core modules, like `fs`, are not mocked by default. They can be mocked explicitly, like `jest.mock('fs')`._
+_Note: Node modules are automatically mocked when you have a manual mock in place (e.g.: `__mocks__/lodash.js`). More info [here](manual-mocks.html#mocking-node-modules)._
 
-_Note: Automocking has a performance cost most noticeable in large projects. See [here](troubleshooting.html#tests-are-slow-when-leveraging-automocking) for details and a workaround._
+_Note: Core modules, like `fs`, are not mocked by default. They can be mocked explicitly, like `jest.mock('fs')`._
 
 ### `bail` [number | boolean]
 
@@ -287,6 +287,12 @@ The `extract` function should return an iterable (`Array`, `Set`, etc.) with the
 
 That module can also contain a `getCacheKey` function to generate a cache key to determine if the logic has changed and any cached artifacts relying on it should be discarded.
 
+### `displayName` [string]
+
+default: `undefined`
+
+Allows for a label to be printed along side a test while it is running. This becomes more useful in multiproject repositories where there can be many jest configuration files. This visually tells which project a test belongs to.
+
 ### `errorOnDeprecated` [boolean]
 
 Default: `false`
@@ -402,7 +408,7 @@ This option allows the use of a custom global teardown module which exports an a
 
 _Note: A global teardown module configured in a project (using multi-project runner) will be triggered only when you run at least one test from this project._
 
-_Node: The same caveat concerning transformation of `node_modules_ as for `globalSetup` applies to `globalTeardown`.
+_Note: The same caveat concerning transformation of `node_modules` as for `globalSetup` applies to `globalTeardown`._
 
 ### `moduleDirectories` [array<string>]
 
@@ -888,7 +894,7 @@ The glob patterns Jest uses to detect test files. By default it looks for `.js`,
 
 See the [micromatch](https://github.com/jonschlinkert/micromatch) package for details of the patterns you can specify.
 
-See also [`testRegex` [string | Array<string>]](#testregex-string), but note that you cannot specify both options.
+See also [`testRegex` [string | array<string>]](#testregex-string-array-string), but note that you cannot specify both options.
 
 ### `testPathIgnorePatterns` [array<string>]
 
@@ -898,7 +904,7 @@ An array of regexp pattern strings that are matched against all test paths befor
 
 These pattern strings match against the full path. Use the `<rootDir>` string token to include the path to your project's root directory to prevent it from accidentally ignoring all of your files in different environments that may have different root directories. Example: `["<rootDir>/build/", "<rootDir>/node_modules/"]`.
 
-### `testRegex` [string | Array<string>]
+### `testRegex` [string | array<string>]
 
 Default: `(/__tests__/.*|(\\.|/)(test|spec))\\.[jt]sx?$`
 
@@ -936,6 +942,7 @@ This option allows the use of a custom results processor. This processor must be
   "numPassedTests": number,
   "numFailedTests": number,
   "numPendingTests": number,
+  "numTodoTests": number,
   "openHandles": Array<Error>,
   "testResults": [{
     "numFailingTests": number,
@@ -983,7 +990,7 @@ function testRunner(
 ): Promise<TestResult>;
 ```
 
-An example of such function can be found in our default [jasmine2 test runner package](https://github.com/facebook/jest/blob/master/packages/jest-jasmine2/src/index.js).
+An example of such function can be found in our default [jasmine2 test runner package](https://github.com/facebook/jest/blob/master/packages/jest-jasmine2/src/index.ts).
 
 ### `testURL` [string]
 
